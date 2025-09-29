@@ -1,20 +1,24 @@
 # Usar uma imagem base oficial do Python
 FROM python:3.9-slim
 
+# Instalar dependências do sistema, incluindo o cliente do postgres
+RUN apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*
+
 # Definir o diretório de trabalho
 WORKDIR /app
 
-# Copiar o arquivo de dependências
-COPY requirements.txt .
+# Copiar o script de espera e dar permissão de execução
+COPY wait-for-postgres.sh .
+RUN chmod +x wait-for-postgres.sh
 
-# Instalar as dependências
+# Copiar o arquivo de dependências e instalar
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar o restante do código da aplicação para o contêiner
+# Copiar o restante do código da aplicação
 COPY . .
 
 # Expor a porta que a aplicação vai rodar
 EXPOSE 8000
 
-# Comando para iniciar a aplicação com Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# O comando para iniciar será definido no docker-compose.yml

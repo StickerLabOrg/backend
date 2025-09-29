@@ -1,4 +1,3 @@
-# Pydantic Schemas
 from pydantic import BaseModel
 
 class ColecaoBase(BaseModel):
@@ -16,4 +15,4 @@ class ColecaoSchema(ColecaoBase):
     id: int
 
     class Config:
-        from_attributes = True # Atualizado de orm_mode para Pydantic V2
+        from_attributes = True
