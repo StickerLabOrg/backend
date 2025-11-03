@@ -12,8 +12,19 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="API Hub do Torcedor")
 
-# Configuração do CORS
-# ... (código do CORS)
+# ✅ Configuração do CORS (libera o frontend React)
+origins = [
+    "http://localhost:5173",   # padrão do Vite
+    "http://127.0.0.1:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,           # libera acesso só pro React local
+    allow_credentials=True,
+    allow_methods=["*"],             # permite todos os métodos HTTP
+    allow_headers=["*"],             # permite todos os cabeçalhos
+)
 
 @app.get("/")
 def read_root():
