@@ -1,33 +1,30 @@
-version: "3.9"
-
 services:
-  backend:
-    build: .
-    container_name: hub_torcedor_backend
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/app
-    environment:
-      - DATABASE_URL=postgresql+psycopg2://user:password@db:5432/hubdb
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=hubdb
-    depends_on:
-      - db
-    command: ["sh", "-c", "until PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U $POSTGRES_USER -d $POSTGRES_DB -c '\\q'; do echo 'Postgres is unavailable - sleeping' >&2; sleep 1; done; echo 'Postgres is up - executing command' >&2; exec uvicorn main:app --host 0.0.0.0 --port 8000 --reload"]
-
   db:
-    image: postgres:13-alpine
-    container_name: hub_torcedor_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
+    image: postgres:13
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=hubdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hub_torcedor
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: .
+    depends_on:
+      - db
+    command: >
+      sh -c "./wait-for-postgres.sh db uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
+
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hub_torcedor
+      POSTGRES_HOST: db
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/hub_torcedor
 
 volumes:
   postgres_data:

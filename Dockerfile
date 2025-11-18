@@ -22,3 +22,8 @@ COPY . .
 EXPOSE 8000
 
 # O comando para iniciar será definido no docker-compose.yml
+
+# ============================
+# Command to run the backend
+# ============================
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

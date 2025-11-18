@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from config import Base
+from backend.src.config import Base
 import pytest
 
 # Usar um banco de dados SQLite em memória para os testes
