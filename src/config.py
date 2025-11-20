@@ -1,4 +1,5 @@
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
     DATABASE_URL: str
@@ -12,8 +13,7 @@ class Settings(BaseSettings):
     THESPORTSDB_DEFAULT_LEAGUE_ID: int
     THESPORTSDB_DEFAULT_SEASON: str
 
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-    class Config:
-        env_file = ".env"
 
 settings = Settings()

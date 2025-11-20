@@ -1,10 +1,11 @@
-from pydantic import BaseModel
 from typing import List, Optional
+
+from pydantic import BaseModel
 
 
 class RankingItem(BaseModel):
     posicao: int
-    medalha: Optional[str]
+    medalha: Optional[str] = None
     avatar: str
     nome: str
     pontos: int

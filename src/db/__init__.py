@@ -1,2 +1,1 @@
-from .session import SessionLocal, get_db
-from .base import Base
+from .session import Base, SessionLocal, get_db  # noqa

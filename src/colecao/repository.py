@@ -1,22 +1,22 @@
 from typing import Optional
+
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from src.colecao.models import (
     Colecao,
     Figurinha,
     Pacote,
+    UsuarioAlbum,
     UsuarioFigurinha,
-    UsuarioAlbum
 )
-
 
 # ===============================
 # COLEÇÃO (ÁLBUM)
 # ===============================
 
+
 def get_colecao_ativa(db: Session) -> Optional[Colecao]:
-    return db.query(Colecao).filter(Colecao.ativa == True).first()
+    return db.query(Colecao).filter(Colecao.ativa).first()
 
 
 def get_colecao_by_id(db: Session, colecao_id: int) -> Optional[Colecao]:
@@ -31,33 +31,34 @@ def listar_colecoes(db: Session):
 # FIGURINHAS
 # ===============================
 
+
 def listar_figurinhas_da_colecao(db: Session, colecao_id: int):
-    return (
-        db.query(Figurinha)
-        .filter(Figurinha.colecao_id == colecao_id)
-        .order_by(Figurinha.numero)
-        .all()
-    )
+    return db.query(Figurinha).filter(Figurinha.colecao_id == colecao_id).order_by(Figurinha.numero).all()
 
 
 def get_figurinha_by_id(db: Session, figurinha_id: int) -> Optional[Figurinha]:
     return db.query(Figurinha).filter(Figurinha.id == figurinha_id).first()
 
 
-def listar_figurinhas_por_raridade(db: Session, raridade: str):
+def listar_figurinhas_por_raridade(db: Session, raridade):
     return db.query(Figurinha).filter(Figurinha.raridade == raridade).all()
 
 
 def usuario_possui_figurinha(db: Session, usuario_id: int, figurinha_id: int) -> Optional[UsuarioFigurinha]:
-    return db.query(UsuarioFigurinha).filter(
-        UsuarioFigurinha.usuario_id == usuario_id,
-        UsuarioFigurinha.figurinha_id == figurinha_id
-    ).first()
+    return (
+        db.query(UsuarioFigurinha)
+        .filter(
+            UsuarioFigurinha.usuario_id == usuario_id,
+            UsuarioFigurinha.figurinha_id == figurinha_id,
+        )
+        .first()
+    )
 
 
 # ===============================
 # PACOTES
 # ===============================
+
 
 def listar_pacotes(db: Session):
     return db.query(Pacote).all()
@@ -71,19 +72,24 @@ def get_pacote_by_id(db: Session, pacote_id: int) -> Optional[Pacote]:
 # USUÁRIO / ÁLBUM
 # ===============================
 
+
 def get_album_usuario(db: Session, usuario_id: int, colecao_id: int) -> Optional[UsuarioAlbum]:
-    return db.query(UsuarioAlbum).filter(
-        UsuarioAlbum.usuario_id == usuario_id,
-        UsuarioAlbum.colecao_id == colecao_id
-    ).first()
+    return (
+        db.query(UsuarioAlbum)
+        .filter(
+            UsuarioAlbum.usuario_id == usuario_id,
+            UsuarioAlbum.colecao_id == colecao_id,
+        )
+        .first()
+    )
 
 
 def criar_album_usuario(db: Session, usuario_id: int, colecao_id: int) -> UsuarioAlbum:
     novo = UsuarioAlbum(
         usuario_id=usuario_id,
         colecao_id=colecao_id,
+        total_encontradas=0,
         total_completas=0,
-        total_encontradas=0
     )
     db.add(novo)
     db.commit()
@@ -92,7 +98,6 @@ def criar_album_usuario(db: Session, usuario_id: int, colecao_id: int) -> Usuari
 
 
 def atualizar_album_usuario(db: Session, album: UsuarioAlbum, encontradas: int):
-    """Atualiza o número de figurinhas únicas encontradas."""
     album.total_encontradas = encontradas
     album.total_completas = encontradas
     db.commit()
@@ -102,10 +107,9 @@ def atualizar_album_usuario(db: Session, album: UsuarioAlbum, encontradas: int):
 # FIGURINHAS DO USUÁRIO
 # ===============================
 
+
 def listar_figurinhas_do_usuario(db: Session, usuario_id: int):
-    return db.query(UsuarioFigurinha).filter(
-        UsuarioFigurinha.usuario_id == usuario_id
-    ).all()
+    return db.query(UsuarioFigurinha).filter(UsuarioFigurinha.usuario_id == usuario_id).all()
 
 
 def adicionar_figurinha_ao_usuario(db: Session, usuario_id: int, figurinha_id: int):
@@ -119,7 +123,7 @@ def adicionar_figurinha_ao_usuario(db: Session, usuario_id: int, figurinha_id: i
         nova = UsuarioFigurinha(
             usuario_id=usuario_id,
             figurinha_id=figurinha_id,
-            quantidade=1
+            quantidade=1,
         )
         db.add(nova)
         db.commit()
@@ -128,26 +132,26 @@ def adicionar_figurinha_ao_usuario(db: Session, usuario_id: int, figurinha_id: i
 
 
 def contar_figurinhas_unicas_usuario(db: Session, usuario_id: int) -> int:
-    return db.query(UsuarioFigurinha).filter(
-        UsuarioFigurinha.usuario_id == usuario_id
-    ).count()
+    return db.query(UsuarioFigurinha).filter(UsuarioFigurinha.usuario_id == usuario_id).count()
 
 
 # ===============================
 # RESETAR ÁLBUM
 # ===============================
 
-def resetar_album(db: Session, usuario_id: int):
-    """Apaga TODAS as figurinhas e progresso do usuário."""
-    db.query(UsuarioFigurinha).filter(
-        UsuarioFigurinha.usuario_id == usuario_id
-    ).delete()
 
-    db.query(UsuarioAlbum).filter(
-        UsuarioAlbum.usuario_id == usuario_id
-    ).delete()
+def resetar_album(db: Session, usuario_id: int):
+    db.query(UsuarioFigurinha).filter(UsuarioFigurinha.usuario_id == usuario_id).delete()
+
+    db.query(UsuarioAlbum).filter(UsuarioAlbum.usuario_id == usuario_id).delete()
 
     db.commit()
+
+
+# ===============================
+# CRUD COLEÇÃO (ADMIN)
+# ===============================
+
 
 def criar_colecao(db: Session, data):
     colecao = Colecao(
@@ -155,7 +159,7 @@ def criar_colecao(db: Session, data):
         descricao=data.descricao,
         ano=data.ano,
         total_figurinhas=data.total_figurinhas,
-        ativa=data.ativa
+        ativa=data.ativa,
     )
     db.add(colecao)
     db.commit()

@@ -1,66 +1,107 @@
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel
-from typing import List, Optional
+
 from src.colecao.models import RaridadeEnum
+
+# ========================
+# COLEÇÃO (CRUD)
+# ========================
 
 
 class ColecaoCreate(BaseModel):
     nome: str
-    descricao: Optional[str]
+    descricao: Optional[str] = None
     ano: int
     total_figurinhas: int
     ativa: bool = True
 
 
 class ColecaoUpdate(BaseModel):
-    nome: Optional[str]
-    descricao: Optional[str]
-    ano: Optional[int]
-    total_figurinhas: Optional[int]
-    ativa: Optional[bool]
+    nome: Optional[str] = None
+    descricao: Optional[str] = None
+    ano: Optional[int] = None
+    total_figurinhas: Optional[int] = None
+    ativa: Optional[bool] = None
 
 
-# ==========================
-# FIGURINHA SORTEADA (NOVO)
-# ==========================
+# ========================
+# FIGURINHAS
+# ========================
+
+
+class FigurinhaBase(BaseModel):
+    id: int
+    numero: int
+    nome: str
+    posicao: Optional[str] = None
+    time: Optional[str] = None
+    raridade: RaridadeEnum
+    imagem_url: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+
+class FigurinhaAlbum(BaseModel):
+    id: int
+    numero: int
+    nome: str
+    posicao: Optional[str] = None
+    time: Optional[str] = None
+    raridade: RaridadeEnum
+    imagem_url: Optional[str] = None
+    possui: bool
+    quantidade: int
+
+    class Config:
+        orm_mode = True
+
+
+# ========================
+# LOJA DE PACOTES
+# ========================
+
+
+class PacoteResponse(BaseModel):
+    id: int
+    nome: str
+    preco_moedas: int
+    quantidade_figurinhas: int
+
+    class Config:
+        orm_mode = True
+
+
+# ========================
+# RESPOSTA ABRIR PACOTE
+# ========================
+
+
 class FigurinhaSorteada(BaseModel):
     id: int
     numero: int
     nome: str
     posicao: Optional[str] = None
     time: Optional[str] = None
-    raridade: str
+    raridade: RaridadeEnum
     imagem_url: Optional[str] = None
     nova: bool
 
 
-# ==========================
-# RESPOSTA DO PACOTE (NOVA)
-# ==========================
 class AbrirPacoteResponse(BaseModel):
     pacote_id_temporario: int
     figurinhas: List[FigurinhaSorteada]
     novas: int
     repetidas: int
-    raridades: dict
+    raridades: Dict[str, int]
     progresso_atual: float
     moedas_restantes: int
 
 
-
-class FigurinhaAlbum(BaseModel):
-    id: int
-    numero: int
-    nome: Optional[str] = None
-    posicao: Optional[str] = None
-    time: Optional[str] = None
-    raridade: Optional[RaridadeEnum] = None
-    imagem_url: Optional[str] = None
-
-    possui: bool
-    quantidade: int = 0
-
-    class Config:
-        orm_mode = True
+# ========================
+# VISÃO COMPLETA DO ÁLBUM
+# ========================
 
 
 class AlbumResponse(BaseModel):
@@ -69,6 +110,5 @@ class AlbumResponse(BaseModel):
     ano: int
     total_figurinhas: int
     coletadas: int
-    progresso: float  # 0.0 a 100.0
-
+    progresso: float
     figurinhas: List[FigurinhaAlbum]

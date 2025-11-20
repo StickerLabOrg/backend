@@ -1,12 +1,10 @@
-import random
-import requests
 from typing import List
 
+import requests
 from sqlalchemy.orm import Session
 
+from src.colecao.models import Colecao, Figurinha, Pacote, RaridadeEnum
 from src.config import settings
-from src.colecao.models import Colecao, Pacote, Figurinha, RaridadeEnum
-
 
 # -----------------------------
 # Times da Série A 2025 (fallback)

@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.sql import func
-from src.db.base import Base
+
+from src.db.session import Base
+
 
 class Palpite(Base):
     __tablename__ = "palpites"
@@ -11,7 +13,7 @@ class Palpite(Base):
     partida_id = Column(String, nullable=False)  # idEvent da API V2
     palpite = Column(String, nullable=False)
 
-    acertou = Column(Boolean, nullable=True)      # None = não processado
+    acertou = Column(Boolean, nullable=True)  # None = não processado
     processado = Column(Boolean, default=False)
 
     created_at = Column(DateTime, server_default=func.now())

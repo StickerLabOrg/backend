@@ -1,21 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, Form, HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.db.session import get_db
+from src.usuario.auth import get_current_user
+
+# <-- AGORA IMPORTA!
 from src.usuario.schema import (
-    UserRegister,
-    UserResponse,
-    TokenResponse,
-    PerfilResponse,
     ChangePasswordRequest,
     ForgotPasswordRequest,
+    PerfilResponse,
+    TokenResponse,
+    UserRegister,
+    UserResponse,
 )
 from src.usuario.service.user_service import (
-    register_user,
-    login_user,
-    get_user_profile,
     change_password,
+    get_user_profile,
+    login_user,
+    register_user,
     reset_password_by_email,
 )
 
@@ -23,52 +25,35 @@ router = APIRouter(prefix="/usuarios", tags=["Usuários"])
 
 
 # -----------------------------
-# REGISTRO
+# REGISTRO (testes: POST /usuarios/)
 # -----------------------------
-@router.post("/register", response_model=UserResponse, status_code=201)
+@router.post("/", response_model=UserResponse, status_code=201)
 def register(data: UserRegister, db: Session = Depends(get_db)):
     try:
-        user = register_user(db, data)
-        return UserResponse(
-            id=user.id,
-            nome=user.nome,
-            email=user.email,
-            time_do_coracao=user.time_do_coracao,
-            coins=user.coins,
-        )
+        return register_user(db, data)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 # -----------------------------
-# LOGIN
+# LOGIN (testes enviam JSON)
 # -----------------------------
 @router.post("/login", response_model=TokenResponse)
-def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
-):
+def login(username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     try:
-        token_data = login_user(db, form_data.username, form_data.password)
-        return token_data
+        return login_user(db=db, email=username, password=password)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
 
 # -----------------------------
-# PERFIL
+# PERFIL DO USUÁRIO LOGADO
 # -----------------------------
-@router.get("/perfil/{usuario_id}", response_model=PerfilResponse)
-def get_perfil(usuario_id: int, db: Session = Depends(get_db)):
-    perfil = get_user_profile(db, usuario_id)
+@router.get("/me", response_model=PerfilResponse)
+def get_me(db: Session = Depends(get_db), usuario=Depends(get_current_user)):
+    perfil = get_user_profile(db, usuario.id)
     if not perfil:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+        raise HTTPException(404, "Usuário não encontrado")
     return perfil
 
 
@@ -76,22 +61,16 @@ def get_perfil(usuario_id: int, db: Session = Depends(get_db)):
 # ALTERAR SENHA (usuário logado)
 # -----------------------------
 @router.post("/alterar-senha")
-def alterar_senha(
-    data: ChangePasswordRequest,
-    db: Session = Depends(get_db),
-):
+def alterar_senha(data: ChangePasswordRequest, db: Session = Depends(get_db), usuario=Depends(get_current_user)):
     try:
         return change_password(
             db,
-            usuario_id=data.usuario_id,
+            usuario_id=usuario.id,
             senha_atual=data.senha_atual,
             nova_senha=data.nova_senha,
         )
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 # -----------------------------
@@ -102,14 +81,7 @@ def esqueci_senha(
     data: ForgotPasswordRequest,
     db: Session = Depends(get_db),
 ):
-    """
-    Fluxo simplificado: o usuário informa o e-mail e a nova senha.
-    Em produção, aqui deveria ser um fluxo com token enviado por e-mail.
-    """
     try:
         return reset_password_by_email(db, data.email, data.nova_senha)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

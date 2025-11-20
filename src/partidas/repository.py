@@ -1,23 +1,35 @@
-import requests
 from typing import List, Optional
+
+import requests
 
 from src.config import settings
 from src.partidas.schema import (
-    Liga, PartidaProxima, PartidaResultado, TabelaTime,
-    TimeInfo, Jogador, ElencoResponse
+    ElencoResponse,
+    Jogador,
+    Liga,
+    PartidaProxima,
+    PartidaResultado,
+    TabelaTime,
+    TimeInfo,
 )
 
-# BASES
+# ---------------------------------------------------
+# CONFIGURAÇÃO DE BASES
+# ---------------------------------------------------
+
 V1_BASE_URL = "https://www.thesportsdb.com/api/v1/json"
 V2_BASE_URL = "https://www.thesportsdb.com/api/v2/json"
 
 API_KEY = settings.THESPORTSDB_API_KEY
 
 
-# -------------------- GENÉRICOS --------------------
+# ---------------------------------------------------
+# FUNÇÕES GENÉRICAS
+# ---------------------------------------------------
+
 
 def _get_v2(path: str, params: dict = None):
-    """Chamada genérica da V2. Header obrigatório."""
+    """Chamada genérica da API V2 (requer header X-API-KEY)."""
     if params is None:
         params = {}
 
@@ -30,7 +42,7 @@ def _get_v2(path: str, params: dict = None):
 
 
 def _get_v1(endpoint: str, params: dict = None):
-    """Chamada da V1 (usa key na URL)."""
+    """Chamada genérica da API V1 (key na URL)."""
     if params is None:
         params = {}
 
@@ -40,10 +52,14 @@ def _get_v1(endpoint: str, params: dict = None):
     return resp.json()
 
 
-# -------------------- LIGAS (V1) --------------------
+# ---------------------------------------------------
+# LIGAS (V1)
+# ---------------------------------------------------
+
 
 def get_ligas_por_pais(pais: str) -> List[Liga]:
     url = f"https://www.thesportsdb.com/api/v1/json/{API_KEY}/search_all_leagues.php"
+
     resp = requests.get(url, params={"c": pais, "s": "Soccer"}, timeout=15)
     resp.raise_for_status()
 
@@ -61,32 +77,26 @@ def get_ligas_por_pais(pais: str) -> List[Liga]:
     ]
 
 
-# -------------------- PRÓXIMAS PARTIDAS (V2 + fallback V1) --------------------
+# ---------------------------------------------------
+# PRÓXIMAS PARTIDAS (V2 + fallback V1)
+# ---------------------------------------------------
+
 
 def get_proximas_partidas_league(league_id: str) -> List[PartidaProxima]:
-    """
-    Tenta buscar próximas partidas pela API V2.
-    Se a V2 não retornar nada (lista vazia), faz fallback para V1.
-    """
-    # --- 1) Tenta V2 ---
     try:
         data_v2 = _get_v2(f"schedule/next/league/{league_id}")
-        events_v2 = data_v2.get("events") or []
+        events = data_v2.get("events") or []
     except Exception:
-        events_v2 = []
+        events = []
 
-    # Se a V2 retornar jogos, usa ela
-    if events_v2:
-        events = events_v2
-    else:
-        # --- 2) Fallback para V1 ---
+    # fallback para V1
+    if not events:
         try:
             data_v1 = _get_v1("eventsnextleague.php", {"id": league_id})
             events = data_v1.get("events") or []
         except Exception:
             events = []
 
-    # --- 3) Mapear eventos para o schema ---
     return [
         PartidaProxima(
             id_partida=str(ev.get("idEvent")),
@@ -94,7 +104,7 @@ def get_proximas_partidas_league(league_id: str) -> List[PartidaProxima]:
             liga_nome=ev.get("strLeague"),
             rodada=ev.get("intRound"),
             data=ev.get("dateEvent"),
-            horario=ev.get("strTime"),   # <--- CORRIGIDO
+            horario=ev.get("strTime"),
             estadio=ev.get("strVenue"),
             status=ev.get("strStatus"),
             time_casa=TimeInfo(
@@ -112,32 +122,20 @@ def get_proximas_partidas_league(league_id: str) -> List[PartidaProxima]:
     ]
 
 
-# -------------------- RESULTADOS (V2) --------------------
+# ---------------------------------------------------
+# RESULTADOS (V2)
+# ---------------------------------------------------
+
 
 def get_ultimos_resultados(league_id: str, limit: int = 10) -> List[PartidaResultado]:
-    """
-    Tenta buscar os últimos resultados pela API V2.
-    Se não houver nada, faz fallback para a API V1.
-    """
-    # --- 1) Tenta V2 ---
     try:
         data_v2 = _get_v2(f"schedule/previous/league/{league_id}")
-        events_v2 = data_v2.get("events") or []
+        events = data_v2.get("events") or []
     except Exception:
-        events_v2 = []
+        events = []
 
-    # Se a V2 retornar algo, usa
-    if events_v2:
-        events = events_v2[:limit]
-    else:
-        # --- 2) Fallback para V1 ---
-        try:
-            data_v1 = _get_v1("eventspastleague.php", {"id": league_id})
-            events = (data_v1.get("events") or [])[:limit]
-        except Exception:
-            events = []
+    events = events[:limit]
 
-    # --- 3) Mapear para o esquema ---
     return [
         PartidaResultado(
             id_partida=str(ev.get("idEvent")),
@@ -158,17 +156,19 @@ def get_ultimos_resultados(league_id: str, limit: int = 10) -> List[PartidaResul
                 nome=ev.get("strAwayTeam"),
                 escudo=ev.get("strAwayTeamBadge"),
             ),
-            placar_casa=int(ev["intHomeScore"]) if ev.get("intHomeScore") else None,
-            placar_fora=int(ev["intAwayScore"]) if ev.get("intAwayScore") else None,
+            placar_casa=int(ev.get("intHomeScore")) if ev.get("intHomeScore") not in [None, ""] else None,
+            placar_fora=int(ev.get("intAwayScore")) if ev.get("intAwayScore") not in [None, ""] else None,
         )
         for ev in events
     ]
 
 
-# -------------------- AO VIVO (V2) --------------------
+# ---------------------------------------------------
+# AO VIVO (V2)
+# ---------------------------------------------------
+
 
 def fetch_live_matches():
-    """Retorna todas as partidas ao vivo."""
     data = _get_v2("livescore/soccer")
     return data.get("events") or data.get("livescore") or []
 
@@ -177,7 +177,10 @@ def get_partidas_ao_vivo():
     return fetch_live_matches()
 
 
-# -------------------- TABELA (V1) --------------------
+# ---------------------------------------------------
+# TABELA DO CAMPEONATO (V1)
+# ---------------------------------------------------
+
 
 def get_tabela(league_id: str, season: Optional[str]):
     params = {"l": league_id, "s": season}
@@ -203,7 +206,10 @@ def get_tabela(league_id: str, season: Optional[str]):
     ]
 
 
-# -------------------- ELENCO (V2) --------------------
+# ---------------------------------------------------
+# ELENCO DO TIME (V2)
+# ---------------------------------------------------
+
 
 def get_elenco_time(team_id: str) -> ElencoResponse:
     data = _get_v2(f"list/players/{team_id}")
@@ -212,7 +218,7 @@ def get_elenco_time(team_id: str) -> ElencoResponse:
     time_info = TimeInfo(
         id=team_id,
         nome=players[0].get("strTeam") if players else "",
-        escudo=players[0].get("strCutout") or players[0].get("strTeamBadge") if players else None,
+        escudo=players[0].get("strTeamBadge") if players else None,
     )
 
     return ElencoResponse(
@@ -231,7 +237,10 @@ def get_elenco_time(team_id: str) -> ElencoResponse:
     )
 
 
-# -------------------- PARTIDA POR ID (V2) --------------------
+# ---------------------------------------------------
+# PARTIDA POR ID (V2)
+# ---------------------------------------------------
+
 
 def get_partida_por_id(event_id: str):
     data = _get_v2(f"lookup/event/{event_id}")
@@ -261,6 +270,6 @@ def get_partida_por_id(event_id: str):
             nome=ev.get("strAwayTeam"),
             escudo=ev.get("strAwayTeamBadge"),
         ),
-        placar_casa=int(ev["intHomeScore"]) if ev.get("intHomeScore") else None,
-        placar_fora=int(ev["intAwayScore"]) if ev.get("intAwayScore") else None,
+        placar_casa=int(ev.get("intHomeScore")) if ev.get("intHomeScore") not in [None, ""] else None,
+        placar_fora=int(ev.get("intAwayScore")) if ev.get("intAwayScore") not in [None, ""] else None,
     )

@@ -7,6 +7,7 @@ python-multipart==0.0.6
 passlib==1.7.4
 bcrypt==3.2.0
 email-validator
-pydantic==1.10.13
+pydantic==2.11.9
+pydantic-settings==2.11.0  
 requests
-
+PyJWT==2.8.0

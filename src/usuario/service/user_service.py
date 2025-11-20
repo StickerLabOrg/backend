@@ -1,25 +1,24 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-from jose import jwt, JWTError
+import jwt
 from passlib.context import CryptContext
+from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from src.config import settings
+from src.palpites.model import Palpite
+from src.usuario.models.user import User
 from src.usuario.repository.user_repository import (
-    get_user_by_email,
     create_user,
+    get_user_by_email,
     get_user_by_id,
     update_user_password,
 )
 from src.usuario.schema import (
-    UserRegister,
-    UserResponse,
     PerfilResponse,
+    UserRegister,
 )
-from src.usuario.models.user import User
-from src.palpites.model import Palpite
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -41,14 +40,10 @@ def get_password_hash(password: str) -> str:
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + (
-        expires_delta
-        if expires_delta
-        else timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta if expires_delta else timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(
-        to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM
-    )
+    encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
 
 
@@ -87,32 +82,22 @@ TOTAL_FIGURINHAS_ALBUM = 250  # ajuste depois conforme seu álbum real
 
 
 def get_user_profile(db: Session, usuario_id: int) -> Optional[PerfilResponse]:
-    user: Optional[User] = get_user_by_id(db, usuario_id)
+    user = get_user_by_id(db, usuario_id)
     if not user:
         return None
 
-    # FIGURINHAS – placeholder por enquanto (0)
+    # FIGURINHAS (placeholder até integrar com álbum)
     total_figurinhas = 0
     progresso_album = 0.0
-    # TODO: integrar com módulo de coleções quando estiver pronto
 
     # PALPITES
-    total_palpites = (
-        db.query(Palpite)
-        .filter(Palpite.usuario_id == usuario_id)
-        .count()
-    )
+    total_palpites = db.query(Palpite).filter(Palpite.usuario_id == usuario_id).count()
 
     acertos = (
-        db.query(func.count())
-        .select_from(Palpite)
-        .filter(Palpite.usuario_id == usuario_id, Palpite.acertou == True)
-        .scalar()
+        db.query(func.count()).select_from(Palpite).filter(Palpite.usuario_id == usuario_id, Palpite.acertou).scalar()
     ) or 0
 
-    taxa_acerto = (
-        round((acertos / total_palpites) * 100, 1) if total_palpites > 0 else 0.0
-    )
+    taxa_acerto = round((acertos / total_palpites) * 100, 1) if total_palpites > 0 else 0.0
 
     return PerfilResponse(
         id=user.id,
@@ -140,6 +125,7 @@ def change_password(
     if not user:
         raise ValueError("Usuário não encontrado.")
 
+    # CORRIGIDO: antes estava user.senha_hash (campo inexistente)
     if not verify_password(senha_atual, user.password_hash):
         raise ValueError("Senha atual incorreta.")
 
@@ -153,11 +139,8 @@ def change_password(
 # -----------------------------
 def reset_password_by_email(db: Session, email: str, nova_senha: str):
     """
-    Fluxo simplificado para 'Esqueci minha senha'.
-
-    ATENÇÃO: para produção, o ideal é gerar um token de reset
-    e enviar um link por e-mail. Aqui fazemos direto para
-    simplificar o projeto.
+    Fluxo simples para 'Esqueci minha senha'.
+    Para produção, recomendável usar token enviado por e-mail.
     """
     user = get_user_by_email(db, email)
     if not user:

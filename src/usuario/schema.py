@@ -1,5 +1,4 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
 
 
 class UserRegister(BaseModel):
@@ -51,3 +50,8 @@ class ChangePasswordRequest(BaseModel):
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
     nova_senha: str
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str

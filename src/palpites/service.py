@@ -1,16 +1,18 @@
 from sqlalchemy.orm import Session
-from src.palpites.model import Palpite
-from src.palpites.schema import PalpiteCreate, PalpiteUpdate
-from src.usuario.models.user import User
-from src.partidas.service import obter_resultado_partida_por_id, listar_partidas_ao_vivo
-from src.palpites.repository import (
-    create_palpite as repo_create,
-    get_all_palpites,
-    update_palpite,
-    get_palpites_pendentes_da_partida
-)
 
-MOEDAS_POR_ACERTO = 10
+from src.palpites.model import Palpite
+from src.palpites.repository import (
+    get_palpites_pendentes_da_partida,
+    update_palpite,
+)
+from src.palpites.schema import PalpiteCreate, PalpiteResponse
+from src.partidas.service import (
+    get_partida_por_id,
+    get_partidas_ao_vivo,
+)
+from src.usuario.models.user import User
+
+MOEDAS_POR_ACERTO = 100
 
 
 # -----------------------------
@@ -30,18 +32,31 @@ def parse_placar(placar: str) -> tuple[int, int]:
 
 
 # -----------------------------
-# CRUD via repository
+# CRUD VIA REPOSITORY
 # -----------------------------
-def criar_palpite(db: Session, palpite_data: PalpiteCreate):
-    return repo_create(db, palpite_data)
+def criar_palpite(db: Session, palpite_data: PalpiteCreate, usuario_id: int):
+    placar = f"{palpite_data.palpite_gols_casa}x{palpite_data.palpite_gols_visitante}"
+
+    novo = Palpite(
+        usuario_id=usuario_id,
+        partida_id=str(palpite_data.partida_id),
+        palpite=placar,
+    )
+
+    db.add(novo)
+    db.commit()
+    db.refresh(novo)
+    return PalpiteResponse.from_model(novo)
 
 
-def listar_palpites(db: Session):
-    return get_all_palpites(db)
+def listar_palpites(db: Session, usuario_id: int):
+    return db.query(Palpite).filter(Palpite.usuario_id == usuario_id).all()
 
 
-def editar_palpite(db: Session, palpite_id: int, dados: PalpiteUpdate, usuario_id: int):
-    return update_palpite(db, palpite_id, dados, usuario_id)
+def editar_palpite(db, palpite_id, dados, usuario_id):
+    palpite = update_palpite(db, palpite_id, dados, usuario_id)
+    if palpite:
+        return PalpiteResponse.from_model(palpite)
 
 
 # -----------------------------
@@ -49,21 +64,16 @@ def editar_palpite(db: Session, palpite_id: int, dados: PalpiteUpdate, usuario_i
 # -----------------------------
 def avaliar_palpites_da_partida(db: Session, partida_id: str):
     """
-    Busca o resultado REAL da partida na API V2.
+    Busca o resultado REAL da partida.
     """
-    resultado = obter_resultado_partida_por_id(partida_id)
+    resultado = get_partida_por_id(partida_id)
 
-    if (
-        resultado is None
-        or resultado.placar_casa is None
-        or resultado.placar_fora is None
-    ):
+    if resultado is None or resultado.placar_casa is None or resultado.placar_fora is None:
         return None  # partida não finalizada
 
     palpites = get_palpites_pendentes_da_partida(db, partida_id)
 
     for palpite in palpites:
-
         try:
             g_casa, g_fora = parse_placar(palpite.palpite)
         except ValueError:
@@ -91,7 +101,11 @@ def avaliar_palpites_da_partida(db: Session, partida_id: str):
 # -----------------------------
 # AVALIAÇÃO MANUAL (TESTE)
 # -----------------------------
-def avaliar_palpites_da_partida_teste(db: Session, partida_id: str, placar_real: str):
+def avaliar_palpites_da_partida_teste(
+    db: Session,
+    partida_id: str,
+    placar_real: str,
+):
     g_casa, g_fora = parse_placar(placar_real)
     palpites = get_palpites_pendentes_da_partida(db, partida_id)
 
@@ -103,7 +117,7 @@ def avaliar_palpites_da_partida_teste(db: Session, partida_id: str, placar_real:
             palpite.processado = True
             continue
 
-        palpite.acertou = (gc == g_casa and gf == g_fora)
+        palpite.acertou = gc == g_casa and gf == g_fora
         palpite.processado = True
 
         if palpite.acertou:
@@ -119,19 +133,16 @@ def avaliar_palpites_da_partida_teste(db: Session, partida_id: str, placar_real:
 # PROCESSAMENTO AUTOMÁTICO
 # -----------------------------
 def processar_palpites_automaticamente(db: Session):
-    lives = listar_partidas_ao_vivo()
+    lives = get_partidas_ao_vivo()
 
-    finalizadas = [p for p in lives if (p.minuto == "FT" or p.minuto == "Finished")]
+    finalizadas = [p for p in lives if (p.status in ["FT", "Finished"])]
 
     resultados = []
 
     for partida in finalizadas:
-        partida_id = partida.id
+        partida_id = partida.idEvent
         r = avaliar_palpites_da_partida(db, partida_id)
         if r:
-            resultados.append({
-                "partida": partida_id,
-                "processados": len(r)
-            })
+            resultados.append({"partida": partida_id, "processados": len(r)})
 
     return resultados

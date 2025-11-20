@@ -1,30 +1,35 @@
 from typing import List, Optional
 
-from src.partidas.schema import (
-    PartidaProxima,
-    PartidaResultado,
-    TabelaTime,
-    Liga,
-    ElencoResponse,
-    TimeInfo,
-)
 from src.config import settings
 from src.partidas import repository
 from src.partidas.repository import fetch_live_matches, get_partida_por_id
+from src.partidas.schema import (
+    ElencoResponse,
+    Liga,
+    PartidaProxima,
+    PartidaResultado,
+    TabelaTime,
+)
 
 DEFAULT_LEAGUE_ID = settings.THESPORTSDB_DEFAULT_LEAGUE_ID
 DEFAULT_SEASON = settings.THESPORTSDB_DEFAULT_SEASON
 
 
-# -------------------- LIGAS --------------------
+# ---------------------------------------------------
+# LIGAS
+# ---------------------------------------------------
 
-def listar_ligas_por_pais(pais: str) -> List[Liga]:
+
+def get_ligas_por_pais(pais: str) -> List[Liga]:
     return repository.get_ligas_por_pais(pais)
 
 
-# -------------------- PRÓXIMAS PARTIDAS --------------------
+# ---------------------------------------------------
+# PRÓXIMAS PARTIDAS
+# ---------------------------------------------------
 
-def listar_proximas_partidas(
+
+def get_proximas_partidas_league(
     league_id: Optional[str] = None,
     limit: int = 10,
 ) -> List[PartidaProxima]:
@@ -34,9 +39,12 @@ def listar_proximas_partidas(
     return partidas[:limit]
 
 
-# -------------------- ÚLTIMOS RESULTADOS --------------------
+# ---------------------------------------------------
+# ÚLTIMOS RESULTADOS
+# ---------------------------------------------------
 
-def listar_ultimos_resultados(
+
+def get_ultimos_resultados(
     league_id: Optional[str] = None,
     limit: int = 10,
 ) -> List[PartidaResultado]:
@@ -45,9 +53,12 @@ def listar_ultimos_resultados(
     return repository.get_ultimos_resultados(lid, limit)
 
 
-# -------------------- TABELA --------------------
+# ---------------------------------------------------
+# TABELA
+# ---------------------------------------------------
 
-def listar_tabela(
+
+def get_tabela(
     league_id: Optional[str] = None,
     season: Optional[str] = None,
 ) -> List[TabelaTime]:
@@ -57,17 +68,23 @@ def listar_tabela(
     return repository.get_tabela(lid, temporada)
 
 
-# -------------------- ELENCO --------------------
+# ---------------------------------------------------
+# ELENCO
+# ---------------------------------------------------
 
-def obter_elenco_time(team_id: str) -> ElencoResponse:
+
+def get_elenco_time(team_id: str) -> ElencoResponse:
     return repository.get_elenco_time(team_id)
 
 
-# -------------------- AO VIVO (V2) --------------------
+# ---------------------------------------------------
+# AO VIVO
+# ---------------------------------------------------
 
-def listar_partidas_ao_vivo(league_id: Optional[str] = None):
+
+def get_partidas_ao_vivo(league_id: Optional[str] = None):
     """
-    Retorna apenas os jogos ao vivo da liga desejada.
+    Retorna somente jogos ao vivo da liga desejada.
     """
     lid = str(league_id or DEFAULT_LEAGUE_ID)
 
@@ -75,8 +92,7 @@ def listar_partidas_ao_vivo(league_id: Optional[str] = None):
     partidas = []
 
     for ev in eventos:
-
-        # Filtra pela liga correta
+        # Filtrar pela liga correta
         if str(ev.get("idLeague")) != lid:
             continue
 
@@ -96,7 +112,10 @@ def listar_partidas_ao_vivo(league_id: Optional[str] = None):
     return partidas
 
 
-# -------------------- PARTIDA POR ID --------------------
+# ---------------------------------------------------
+# PARTIDA POR ID
+# ---------------------------------------------------
+
 
 def obter_resultado_partida_por_id(event_id: str) -> Optional[PartidaResultado]:
     return get_partida_por_id(event_id)

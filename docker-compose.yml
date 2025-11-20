@@ -15,7 +15,10 @@ services:
     depends_on:
       - db
     command: >
-      sh -c "./wait-for-postgres.sh db uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
+      sh -c "./wait-for-postgres.sh db &&
+             pytest -q &&
+             uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
+
 
     ports:
       - "8000:8000"

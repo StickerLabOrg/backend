@@ -1,4 +1,5 @@
-from typing import Optional, List
+from typing import List, Optional
+
 from pydantic import BaseModel, HttpUrl
 
 
@@ -73,6 +74,6 @@ class PartidaLive(BaseModel):
     time_casa: str
     time_fora: str
     placar: str
-    minuto: Optional[str]
-    escudo_casa: Optional[str]
-    escudo_fora: Optional[str]
+    minuto: Optional[str] = None
+    escudo_casa: Optional[str] = None
+    escudo_fora: Optional[str] = None
