@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, EmailStr
 
 
@@ -5,7 +6,7 @@ class UserRegister(BaseModel):
     nome: str
     email: EmailStr
     password: str
-    time_do_coracao: str
+    time_do_coracao: Optional[str] = None
 
 
 class UserResponse(BaseModel):

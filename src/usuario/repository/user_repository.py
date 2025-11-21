@@ -17,15 +17,15 @@ def create_user(
     email: str,
     password_hash: str,
     time_do_coracao: str,
-    is_admin: bool = False,
 ):
     user = User(
         nome=nome,
         email=email,
         password_hash=password_hash,
         time_do_coracao=time_do_coracao,
-        is_admin=is_admin,
+        is_active=True,
     )
+
     db.add(user)
     db.commit()
     db.refresh(user)

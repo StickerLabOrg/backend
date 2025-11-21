@@ -1,6 +1,9 @@
-from sqlalchemy import Boolean, Column, Integer, String
-
+from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy.orm import relationship
 from src.db.session import Base
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class User(Base):
@@ -12,6 +15,24 @@ class User(Base):
 
     password_hash = Column(String, nullable=False)
 
-    time_do_coracao = Column(String, nullable=False)
-    is_admin = Column(Boolean, default=False)
+    # 🔥 CAMPO NECESSÁRIO PARA OS TESTES FUNCIONAREM
+    time_do_coracao = Column(String, nullable=True)
+
     coins = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+
+    figurinhas = relationship("UsuarioFigurinha", cascade="all, delete-orphan")
+    albuns = relationship("UsuarioAlbum", cascade="all, delete-orphan")
+
+    def __init__(self, **kwargs):
+        password = kwargs.pop("password", None)
+        super().__init__(**kwargs)
+
+        if password:
+            self.set_password(password)
+
+    def set_password(self, password: str):
+        self.password_hash = pwd_context.hash(password)
+
+    def verify_password(self, password: str):
+        return pwd_context.verify(password, self.password_hash)

@@ -55,14 +55,21 @@ def register_user(db: Session, data: UserRegister) -> User:
     if existing:
         raise ValueError("E-mail já cadastrado.")
 
+    time = getattr(data, "time_do_coracao", None)
+
+    if not time:
+        time = "Sem time"
+
     hashed = get_password_hash(data.password)
+
     user = create_user(
         db,
         nome=data.nome,
         email=data.email,
         password_hash=hashed,
-        time_do_coracao=data.time_do_coracao,
+        time_do_coracao=time,
     )
+
     return user
 
 
