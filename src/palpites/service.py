@@ -49,8 +49,12 @@ def criar_palpite(db: Session, palpite_data: PalpiteCreate, usuario_id: int):
     return PalpiteResponse.from_model(novo)
 
 
+# 
+# Agora converte Palpite → PalpiteResponse (evita erro 500)
+# -----------------------------------------------------
 def listar_palpites(db: Session, usuario_id: int):
-    return db.query(Palpite).filter(Palpite.usuario_id == usuario_id).all()
+    palpites = db.query(Palpite).filter(Palpite.usuario_id == usuario_id).all()
+    return [PalpiteResponse.from_model(p) for p in palpites]
 
 
 def editar_palpite(db, palpite_id, dados, usuario_id):
