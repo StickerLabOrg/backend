@@ -1,0 +1,31 @@
+# Ambiente virtual
+.venv/
+venv/
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Cache do pytest
+.pytest_cache/
+
+# Cache do coverage
+htmlcov/
+.coverage
+
+# IDEs
+.vscode/
+.idea/
+
+# Arquivos temporários
+*.log
+*.tmp
+*.swp
+*.DS_Store
+Thumbs.db
+
+# Build front-end
+node_modules/
+dist/
