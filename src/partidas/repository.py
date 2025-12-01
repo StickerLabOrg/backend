@@ -1,5 +1,4 @@
 from typing import List, Optional
-
 import requests
 
 from src.config import settings
@@ -26,7 +25,6 @@ API_KEY = settings.THESPORTSDB_API_KEY
 # ---------------------------------------------------
 # FUNÇÕES GENÉRICAS
 # ---------------------------------------------------
-
 
 def _get_v2(path: str, params: dict = None):
     """Chamada genérica da API V2 (requer header X-API-KEY)."""
@@ -56,7 +54,6 @@ def _get_v1(endpoint: str, params: dict = None):
 # LIGAS (V1)
 # ---------------------------------------------------
 
-
 def get_ligas_por_pais(pais: str) -> List[Liga]:
     url = f"https://www.thesportsdb.com/api/v1/json/{API_KEY}/search_all_leagues.php"
 
@@ -81,15 +78,15 @@ def get_ligas_por_pais(pais: str) -> List[Liga]:
 # PRÓXIMAS PARTIDAS (V2 + fallback V1)
 # ---------------------------------------------------
 
-
 def get_proximas_partidas_league(league_id: str) -> List[PartidaProxima]:
+    # 1 — tenta API V2
     try:
         data_v2 = _get_v2(f"schedule/next/league/{league_id}")
         events = data_v2.get("events") or []
     except Exception:
         events = []
 
-    # fallback para V1
+    # 2 — fallback V1
     if not events:
         try:
             data_v1 = _get_v1("eventsnextleague.php", {"id": league_id})
@@ -123,50 +120,81 @@ def get_proximas_partidas_league(league_id: str) -> List[PartidaProxima]:
 
 
 # ---------------------------------------------------
-# RESULTADOS (V2)
+# ÚLTIMOS RESULTADOS (V2 + Fallback V1)
 # ---------------------------------------------------
 
-
 def get_ultimos_resultados(league_id: str, limit: int = 10) -> List[PartidaResultado]:
+    events = []
+
+    # ------------------------------------
+    # 1 — Tenta API V2 (schedule/previous)
+    # ------------------------------------
     try:
         data_v2 = _get_v2(f"schedule/previous/league/{league_id}")
         events = data_v2.get("events") or []
     except Exception:
         events = []
 
+    # ------------------------------------------------------------------
+    # 2 — Fallback V1 (eventslast.php) — ESSENCIAL PARA O BRASILEIRÃO
+    # ------------------------------------------------------------------
+    if not events:
+        try:
+            data_v1 = _get_v1("eventslast.php", {"id": league_id})
+            events = (
+                data_v1.get("results")
+                or data_v1.get("events")
+                or []
+            )
+        except Exception:
+            events = []
+
+    # Limita quantidade
     events = events[:limit]
 
-    return [
-        PartidaResultado(
-            id_partida=str(ev.get("idEvent")),
-            liga_id=str(ev.get("idLeague")),
-            liga_nome=ev.get("strLeague"),
-            rodada=ev.get("intRound"),
-            data=ev.get("dateEvent"),
-            horario=ev.get("strTime"),
-            estadio=ev.get("strVenue"),
-            status=ev.get("strStatus"),
-            time_casa=TimeInfo(
-                id=str(ev.get("idHomeTeam")),
-                nome=ev.get("strHomeTeam"),
-                escudo=ev.get("strHomeTeamBadge"),
-            ),
-            time_fora=TimeInfo(
-                id=str(ev.get("idAwayTeam")),
-                nome=ev.get("strAwayTeam"),
-                escudo=ev.get("strAwayTeamBadge"),
-            ),
-            placar_casa=int(ev.get("intHomeScore")) if ev.get("intHomeScore") not in [None, ""] else None,
-            placar_fora=int(ev.get("intAwayScore")) if ev.get("intAwayScore") not in [None, ""] else None,
+    resultados = []
+
+    # Conversão para PartidaResultado
+    for ev in events:
+        resultados.append(
+            PartidaResultado(
+                id_partida=str(ev.get("idEvent")),
+                liga_id=str(ev.get("idLeague")),
+                liga_nome=ev.get("strLeague"),
+                rodada=ev.get("intRound"),
+                data=ev.get("dateEvent"),
+                horario=ev.get("strTime"),
+                estadio=ev.get("strVenue"),
+                status=ev.get("strStatus"),
+
+                time_casa=TimeInfo(
+                    id=str(ev.get("idHomeTeam")),
+                    nome=ev.get("strHomeTeam"),
+                    escudo=ev.get("strHomeTeamBadge"),
+                ),
+
+                time_fora=TimeInfo(
+                    id=str(ev.get("idAwayTeam")),
+                    nome=ev.get("strAwayTeam"),
+                    escudo=ev.get("strAwayTeamBadge"),
+                ),
+
+                placar_casa=int(ev.get("intHomeScore"))
+                if ev.get("intHomeScore") not in [None, ""]
+                else None,
+
+                placar_fora=int(ev.get("intAwayScore"))
+                if ev.get("intAwayScore") not in [None, ""]
+                else None,
+            )
         )
-        for ev in events
-    ]
+
+    return resultados
 
 
 # ---------------------------------------------------
-# AO VIVO (V2)
+# PARTIDAS AO VIVO (V2)
 # ---------------------------------------------------
-
 
 def fetch_live_matches():
     data = _get_v2("livescore/soccer")
@@ -180,7 +208,6 @@ def get_partidas_ao_vivo():
 # ---------------------------------------------------
 # TABELA DO CAMPEONATO (V1)
 # ---------------------------------------------------
-
 
 def get_tabela(league_id: str, season: Optional[str]):
     params = {"l": league_id, "s": season}
@@ -207,9 +234,8 @@ def get_tabela(league_id: str, season: Optional[str]):
 
 
 # ---------------------------------------------------
-# ELENCO DO TIME (V2)
+# ELENCO (V2)
 # ---------------------------------------------------
-
 
 def get_elenco_time(team_id: str) -> ElencoResponse:
     data = _get_v2(f"list/players/{team_id}")
@@ -240,7 +266,6 @@ def get_elenco_time(team_id: str) -> ElencoResponse:
 # ---------------------------------------------------
 # PARTIDA POR ID (V2)
 # ---------------------------------------------------
-
 
 def get_partida_por_id(event_id: str):
     data = _get_v2(f"lookup/event/{event_id}")
