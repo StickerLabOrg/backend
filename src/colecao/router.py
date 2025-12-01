@@ -26,7 +26,7 @@ from src.colecao.schema import (
 )
 from src.colecao.service import abrir_pacote, confirmar_insercao, montar_album_usuario
 from src.db.session import get_db
-from src.usuario.auth import get_current_user
+from src.auth.auth_client import get_current_user
 
 router = APIRouter(prefix="/colecao", tags=["Coleção"])
 

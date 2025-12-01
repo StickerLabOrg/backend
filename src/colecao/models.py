@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import JSON, Boolean, Column, Enum, ForeignKey, Integer, String
+from sqlalchemy import JSON, Boolean, Column, Enum, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 
 from src.db.session import Base
@@ -8,7 +8,6 @@ from src.db.session import Base
 # ========================
 # RARIDADE ENUM
 # ========================
-
 
 class RaridadeEnum(enum.Enum):
     comum = "comum"
@@ -20,7 +19,6 @@ class RaridadeEnum(enum.Enum):
 # ========================
 # COLEÇÃO (ÁLBUM)
 # ========================
-
 
 class Colecao(Base):
     __tablename__ = "colecoes"
@@ -40,7 +38,6 @@ class Colecao(Base):
 # FIGURINHAS
 # ========================
 
-
 class Figurinha(Base):
     __tablename__ = "figurinhas"
 
@@ -50,10 +47,8 @@ class Figurinha(Base):
     numero = Column(Integer, nullable=False, index=True)
     nome = Column(String, nullable=False)
 
-    # ex: "Atacante", "Goleiro", "Mascote", "Escudo" etc.
-    posicao = Column(String, nullable=True)
-    # nome do time (Flamengo, Palmeiras, etc.)
-    time = Column(String, nullable=True)
+    posicao = Column(String, nullable=True)  # Ex.: Atacante, Goleiro
+    time = Column(String, nullable=True)     # Nome do time (Flamengo, Palmeiras)
 
     raridade = Column(Enum(RaridadeEnum), nullable=False)
     imagem_url = Column(String, nullable=True)
@@ -63,9 +58,8 @@ class Figurinha(Base):
 
 
 # ========================
-# PACOTES
+# PACOTES (LOJA)
 # ========================
-
 
 class Pacote(Base):
     __tablename__ = "pacotes"
@@ -75,8 +69,6 @@ class Pacote(Base):
     preco_moedas = Column(Integer, nullable=False)
     quantidade_figurinhas = Column(Integer, nullable=False)
 
-    # JSON com probabilidades de raridade (ex:
-    # {"comum": 0.8, "rara": 0.15, "epica": 0.04, "lendaria": 0.01}
     chances_raridade = Column(JSON, nullable=False)
 
 
@@ -84,14 +76,15 @@ class Pacote(Base):
 # FIGURINHAS DO USUÁRIO
 # ========================
 
-
 class UsuarioFigurinha(Base):
     __tablename__ = "usuario_figurinhas"
 
     id = Column(Integer, primary_key=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    figurinha_id = Column(Integer, ForeignKey("figurinhas.id", ondelete="CASCADE"), nullable=False)
 
+    # ❗ Agora é só int (não depende mais da tabela users)
+    usuario_id = Column(Integer, nullable=False)
+
+    figurinha_id = Column(Integer, ForeignKey("figurinhas.id", ondelete="CASCADE"), nullable=False)
     quantidade = Column(Integer, default=1)
 
     figurinha = relationship("Figurinha", back_populates="usuarios")
@@ -101,12 +94,14 @@ class UsuarioFigurinha(Base):
 # ÁLBUM DO USUÁRIO
 # ========================
 
-
 class UsuarioAlbum(Base):
     __tablename__ = "usuario_album"
 
     id = Column(Integer, primary_key=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    # ❗ Agora é só int (não depende mais da tabela users)
+    usuario_id = Column(Integer, nullable=False)
+
     colecao_id = Column(Integer, ForeignKey("colecoes.id", ondelete="CASCADE"), nullable=False)
 
     total_encontradas = Column(Integer, default=0)
@@ -119,13 +114,13 @@ class UsuarioAlbum(Base):
 # PACOTE ABERTO (TEMPORÁRIO)
 # ========================
 
-
 class PacoteAberto(Base):
     __tablename__ = "pacotes_abertos"
 
     id = Column(Integer, primary_key=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
-    # lista das figurinhas sorteadas, ex:
-    # [{"id": 10, "numero": 10, "nome": "...", "raridade": "comum", "nova": True}, ...]
+    # ❗ Agora é só int (não depende mais da tabela users)
+    usuario_id = Column(Integer, nullable=False)
+
+    # Lista de figurinhas sorteadas (JSON)
     conteudo = Column(JSON, nullable=False)

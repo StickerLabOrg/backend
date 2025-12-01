@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from src.db.session import get_db
 from src.ranking.schema import RankingResponse
 from src.ranking.service import ranking_geral, ranking_mensal, ranking_semanal
-from src.usuario.auth import get_current_user
+from src.auth.auth_client import get_current_user
 
 router = APIRouter(prefix="/ranking", tags=["Ranking"])
 

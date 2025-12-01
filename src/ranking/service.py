@@ -6,7 +6,7 @@ from sqlalchemy.sql import case
 
 from src.palpites.model import Palpite
 from src.ranking.schema import RankingItem, RankingResponse
-from src.usuario.models.user import User
+from src.auth.auth_client import get_current_user
 
 PONTOS_POR_ACERTO = 10
 
