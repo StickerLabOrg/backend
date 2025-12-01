@@ -3,31 +3,31 @@ import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy.orm import Session
 
+from src.colecao.models import Colecao, Pacote
 from src.usuario.models.user import User
-from src.colecao.models import Pacote, Colecao
 
 
 # ============================================================
-# FIXTURE — AUTENTICAÇÃO (AGORA CORRETO!)
+# FIXTURE — AUTENTICAÇÃO
 # ============================================================
 @pytest_asyncio.fixture
 async def auth_header(async_client: AsyncClient, db: Session):
+    """Cria um usuário (se não existir) e retorna o header de autenticação JWT."""
 
-    # cria usuário se não existir
     if db.query(User).filter_by(email="teste@hub.com").first() is None:
         user = User(
             nome="Teste",
             email="teste@hub.com",
             password="123456",
-            coins=5000
+            coins=5000,
         )
         db.add(user)
         db.commit()
 
-    # login
+    # Login
     response = await async_client.post(
         "/usuarios/login",
-        data={"username": "teste@hub.com", "password": "123456"}
+        data={"username": "teste@hub.com", "password": "123456"},
     )
 
     assert response.status_code == 200
@@ -39,22 +39,31 @@ async def auth_header(async_client: AsyncClient, db: Session):
 # ============================================================
 # FIXTURE — CRIAR PACOTE + COLEÇÃO
 # ============================================================
-
 @pytest.fixture
 def ensure_pacote(db: Session):
+    """Garante que exista pelo menos uma coleção e um pacote."""
+
     if db.query(Colecao).count() == 0:
-        col = Colecao(nome="Brasileirão 2025", ano=2025, ativa=True, total_figurinhas=200)
+        col = Colecao(
+            nome="Brasileirão 2025",
+            ano=2025,
+            ativa=True,
+            total_figurinhas=200,
+        )
         db.add(col)
         db.commit()
-
-    colecao = db.query(Colecao).first()
 
     if db.query(Pacote).count() == 0:
         pacote = Pacote(
             nome="Pacote Teste",
             preco_moedas=100,
             quantidade_figurinhas=5,
-            chances_raridade={"comum": 75, "rara": 20, "epica": 4, "lendaria": 1}
+            chances_raridade={
+                "comum": 75,
+                "rara": 20,
+                "epica": 4,
+                "lendaria": 1,
+            },
         )
         db.add(pacote)
         db.commit()
@@ -63,7 +72,7 @@ def ensure_pacote(db: Session):
 
 
 # ============================================================
-# TESTES
+# TESTES DE ROTAS GERAIS
 # ============================================================
 
 @pytest.mark.asyncio
@@ -71,7 +80,7 @@ async def test_criar_usuario(async_client: AsyncClient):
     payload = {
         "email": "novo@hub.com",
         "password": "123456",
-        "nome": "Novo Usuário"
+        "nome": "Novo Usuário",
     }
 
     response = await async_client.post("/usuarios/", json=payload)
@@ -84,9 +93,14 @@ async def test_login(async_client: AsyncClient, auth_header):
 
 
 @pytest.mark.asyncio
-async def test_comprar_pacote(async_client, auth_header, ensure_pacote, db):
+async def test_comprar_pacote(async_client, auth_header, ensure_pacote):
     pacote = ensure_pacote
-    response = await async_client.post(f"/colecao/comprar/{pacote.id}", headers=auth_header)
+
+    response = await async_client.post(
+        f"/colecao/comprar/{pacote.id}",
+        headers=auth_header,
+    )
+
     assert response.status_code == 200
     assert "figurinhas" in response.json()
 
@@ -94,6 +108,7 @@ async def test_comprar_pacote(async_client, auth_header, ensure_pacote, db):
 @pytest.mark.asyncio
 async def test_ver_album(async_client, auth_header):
     response = await async_client.get("/colecao/album", headers=auth_header)
+
     assert response.status_code == 200
     assert "colecao_id" in response.json()
 
@@ -101,6 +116,7 @@ async def test_ver_album(async_client, auth_header):
 @pytest.mark.asyncio
 async def test_listar_repetidas(async_client, auth_header):
     response = await async_client.get("/colecao/repetidas", headers=auth_header)
+
     assert response.status_code == 200
 
 
@@ -109,11 +125,16 @@ async def test_criar_palpite(async_client, auth_header):
     payload = {
         "partida_id": "12345",
         "palpite_gols_casa": 1,
-        "palpite_gols_visitante": 0
+        "palpite_gols_visitante": 0,
     }
 
-    response = await async_client.post("/palpites/", json=payload, headers=auth_header)
-    assert response.status_code in (201, 200)
+    response = await async_client.post(
+        "/palpites/",
+        json=payload,
+        headers=auth_header,
+    )
+
+    assert response.status_code in (200, 201)
 
 
 @pytest.mark.asyncio

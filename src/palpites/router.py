@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from src.db.session import get_db
+from src.palpites.model import Palpite
 from src.palpites.schema import PalpiteCreate, PalpiteResponse, PalpiteUpdate
 from src.palpites.service import (
     avaliar_palpites_da_partida,
@@ -12,7 +13,6 @@ from src.palpites.service import (
     processar_palpites_automaticamente,
 )
 from src.usuario.auth import get_current_user
-from src.palpites.model import Palpite
 
 router = APIRouter(prefix="/palpites", tags=["Palpites"])
 
@@ -22,17 +22,12 @@ router = APIRouter(prefix="/palpites", tags=["Palpites"])
 # -------------------------------------------------------------------------
 @router.post("/", response_model=PalpiteResponse)
 def criar_ou_editar_palpite_endpoint(
-    palpite: PalpiteCreate,
-    db: Session = Depends(get_db),
-    usuario=Depends(get_current_user)
+    palpite: PalpiteCreate, db: Session = Depends(get_db), usuario=Depends(get_current_user)
 ):
     # Verifica se já existe palpite desta partida para o usuário
     palpite_existente = (
         db.query(Palpite)
-        .filter(
-            Palpite.usuario_id == usuario.id,
-            Palpite.partida_id == str(palpite.partida_id)
-        )
+        .filter(Palpite.usuario_id == usuario.id, Palpite.partida_id == str(palpite.partida_id))
         .first()
     )
 
@@ -52,10 +47,7 @@ def criar_ou_editar_palpite_endpoint(
 # LISTAR TODOS OS PALPITES DO USUÁRIO
 # -------------------------------------------------------------------------
 @router.get("/", response_model=list[PalpiteResponse])
-def listar_palpites_endpoint(
-    db: Session = Depends(get_db),
-    usuario=Depends(get_current_user)
-):
+def listar_palpites_endpoint(db: Session = Depends(get_db), usuario=Depends(get_current_user)):
     return listar_palpites(db, usuario.id)
 
 
@@ -94,24 +86,13 @@ def avaliar_endpoint(
 # AVALIAÇÃO MANUAL (TESTE)
 # -------------------------------------------------------------------------
 @router.post("/processar-teste")
-def processar_teste(
-    data: dict,
-    db: Session = Depends(get_db),
-    usuario=Depends(get_current_user)
-):
-    return avaliar_palpites_da_partida_teste(
-        db,
-        data["partida_id"],
-        data["resultado"]
-    )
+def processar_teste(data: dict, db: Session = Depends(get_db), usuario=Depends(get_current_user)):
+    return avaliar_palpites_da_partida_teste(db, data["partida_id"], data["resultado"])
 
 
 # -------------------------------------------------------------------------
 # PROCESSAMENTO AUTOMÁTICO (PARTIDAS FINALIZADAS)
 # -------------------------------------------------------------------------
 @router.post("/processar-automatico")
-def processar_auto(
-    db: Session = Depends(get_db),
-    usuario=Depends(get_current_user)
-):
+def processar_auto(db: Session = Depends(get_db), usuario=Depends(get_current_user)):
     return processar_palpites_automaticamente(db)

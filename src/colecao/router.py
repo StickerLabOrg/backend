@@ -24,11 +24,7 @@ from src.colecao.schema import (
     FigurinhaBase,
     PacoteResponse,
 )
-from src.colecao.service import (
-    abrir_pacote,
-    confirmar_insercao,
-    montar_album_usuario,
-)
+from src.colecao.service import abrir_pacote, confirmar_insercao, montar_album_usuario
 from src.db.session import get_db
 from src.usuario.auth import get_current_user
 

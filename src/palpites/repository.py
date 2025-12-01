@@ -24,6 +24,7 @@ def get_all_palpites(db: Session):
 # PALPITES PENDENTES
 # ==============================
 
+
 def get_palpites_pendentes_da_partida(db: Session, partida_id: str):
     return (
         db.query(Palpite)
@@ -41,12 +42,7 @@ def get_partidas_com_palpites_pendentes(db: Session) -> list[str]:
     não processados. Isso é usado pelo processamento automático
     para decidir quais partidas precisam ser avaliadas.
     """
-    rows = (
-        db.query(Palpite.partida_id)
-        .filter(Palpite.processado.is_(False))
-        .distinct()
-        .all()
-    )
+    rows = db.query(Palpite.partida_id).filter(Palpite.processado.is_(False)).distinct().all()
     # rows vem como lista de tuplas (("2385385",), ("2385386",)...)
     return [r[0] for r in rows]
 
@@ -66,15 +62,9 @@ def update_palpite(db: Session, palpite_id: int, dados: PalpiteUpdate, usuario_i
         return None
 
     # Reconstruir placar (mantém valor atual caso campo esteja vazio)
-    g_casa = (
-        dados.palpite_gols_casa
-        if dados.palpite_gols_casa is not None
-        else int(palpite.palpite.split("x")[0])
-    )
+    g_casa = dados.palpite_gols_casa if dados.palpite_gols_casa is not None else int(palpite.palpite.split("x")[0])
     g_fora = (
-        dados.palpite_gols_visitante
-        if dados.palpite_gols_visitante is not None
-        else int(palpite.palpite.split("x")[1])
+        dados.palpite_gols_visitante if dados.palpite_gols_visitante is not None else int(palpite.palpite.split("x")[1])
     )
 
     palpite.palpite = f"{g_casa}x{g_fora}"

@@ -1,8 +1,6 @@
-import pytest
 from unittest.mock import MagicMock
 
 import src.ranking.service as service
-from src.ranking.schema import RankingItem
 
 
 # -------------------------------------------------------
@@ -48,13 +46,14 @@ def test_montar_ranking():
 
     assert len(ranking) == 2
 
-    # Ranking ordenado por pontos (coins)
+    # item 1
     assert ranking[0].nome == "Lucas"
     assert ranking[0].pontos == 50
     assert ranking[0].posicao == 1
     assert ranking[0].medalha == "ouro"
     assert ranking[0].is_you is True
 
+    # item 2
     assert ranking[1].nome == "Marcos"
     assert ranking[1].posicao == 2
     assert ranking[1].medalha == "prata"
@@ -85,7 +84,7 @@ def test_ranking_geral(mocker):
 # -------------------------------------------------------
 def test_ranking_semanal(mocker):
     db = MagicMock()
-    db.bind.dialect.name = "sqlite"  # simula sqlite
+    db.bind.dialect.name = "sqlite"  # simula SQLite
 
     rows = [DummyRow(1, "Carlos", 15, 5, 3)]
 

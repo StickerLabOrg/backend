@@ -3,13 +3,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Query
 
 from src.partidas import service
-from src.partidas.schema import (
-    ElencoResponse,
-    Liga,
-    PartidaProxima,
-    PartidaResultado,
-    TabelaTime,
-)
+from src.partidas.schema import ElencoResponse, Liga, PartidaProxima, PartidaResultado, TabelaTime
 
 router = APIRouter(prefix="/partidas", tags=["Partidas"])
 

@@ -2,13 +2,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from src.colecao.models import (
-    Colecao,
-    Figurinha,
-    Pacote,
-    UsuarioAlbum,
-    UsuarioFigurinha,
-)
+from src.colecao.models import Colecao, Figurinha, Pacote, UsuarioAlbum, UsuarioFigurinha
 
 # ===============================
 # COLEÇÃO (ÁLBUM)

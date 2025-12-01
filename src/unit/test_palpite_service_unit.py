@@ -1,13 +1,10 @@
-import pytest
-from unittest.mock import MagicMock
 from datetime import datetime
+from unittest.mock import MagicMock
+
+import pytest
 
 from src.palpites.schema import PalpiteCreate
-from src.palpites.service import (
-    criar_palpite,
-    avaliar_palpites_da_partida,
-    processar_palpites_automaticamente,
-)
+from src.palpites.service import avaliar_palpites_da_partida, criar_palpite, processar_palpites_automaticamente
 
 
 # -----------------------------------------------------
@@ -150,5 +147,3 @@ def test_processar_automatico(mocker, db_session):
     result = processar_palpites_automaticamente(db_session)
 
     assert result == []  # backend real sempre retorna []
-
-

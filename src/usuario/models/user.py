@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean
-from sqlalchemy.orm import relationship
-from src.db.session import Base
 from passlib.context import CryptContext
+from sqlalchemy import Boolean, Column, Integer, String
+from sqlalchemy.orm import relationship
+
+from src.db.session import Base
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

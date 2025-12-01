@@ -9,16 +9,8 @@ from sqlalchemy.orm import Session
 from src.config import settings
 from src.palpites.model import Palpite
 from src.usuario.models.user import User
-from src.usuario.repository.user_repository import (
-    create_user,
-    get_user_by_email,
-    get_user_by_id,
-    update_user_password,
-)
-from src.usuario.schema import (
-    PerfilResponse,
-    UserRegister,
-)
+from src.usuario.repository.user_repository import create_user, get_user_by_email, get_user_by_id, update_user_password
+from src.usuario.schema import PerfilResponse, UserRegister
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

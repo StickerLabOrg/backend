@@ -3,24 +3,9 @@ import random
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from src.colecao.models import (
-    Colecao,
-    Figurinha,
-    Pacote,
-    PacoteAberto,
-    RaridadeEnum,
-    UsuarioAlbum,
-    UsuarioFigurinha,
-)
-from src.colecao.repository import (
-    get_colecao_ativa,
-    listar_figurinhas_da_colecao,
-    listar_figurinhas_do_usuario,
-)
-from src.colecao.schema import (
-    AlbumResponse,
-    FigurinhaAlbum,
-)
+from src.colecao.models import Colecao, Figurinha, Pacote, PacoteAberto, RaridadeEnum, UsuarioAlbum, UsuarioFigurinha
+from src.colecao.repository import get_colecao_ativa, listar_figurinhas_da_colecao, listar_figurinhas_do_usuario
+from src.colecao.schema import AlbumResponse, FigurinhaAlbum
 
 
 # ===================================================

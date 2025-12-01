@@ -68,11 +68,7 @@ def avaliar_palpites_da_partida(db: Session, partida_id: str):
     """
     resultado = get_partida_por_id(partida_id)
 
-    if (
-        resultado is None
-        or resultado.placar_casa is None
-        or resultado.placar_fora is None
-    ):
+    if resultado is None or resultado.placar_casa is None or resultado.placar_fora is None:
         # partida ainda não finalizada ou não encontrada
         return None
 

@@ -14,27 +14,21 @@ if os.environ.get("UNIT_TEST", "0") == "1":
         """Mock do get_db para testes unitários."""
         yield MagicMock()
 
+
 # ---------------------------------------------------
 # MODO NORMAL → BACKEND REAL
 # ---------------------------------------------------
 else:
     from sqlalchemy import create_engine
     from sqlalchemy.orm import declarative_base, sessionmaker
+
     from src.config import settings
 
     Base = declarative_base()
 
-    engine = create_engine(
-        settings.DATABASE_URL,
-        future=True,
-        echo=False
-    )
+    engine = create_engine(settings.DATABASE_URL, future=True, echo=False)
 
-    SessionLocal = sessionmaker(
-        autocommit=False,
-        autoflush=False,
-        bind=engine
-    )
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     def get_db():
         db = SessionLocal()

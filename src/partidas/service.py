@@ -3,13 +3,7 @@ from typing import List, Optional
 from src.config import settings
 from src.partidas import repository
 from src.partidas.repository import fetch_live_matches, get_partida_por_id
-from src.partidas.schema import (
-    ElencoResponse,
-    Liga,
-    PartidaProxima,
-    PartidaResultado,
-    TabelaTime,
-)
+from src.partidas.schema import ElencoResponse, Liga, PartidaProxima, PartidaResultado, TabelaTime
 
 DEFAULT_LEAGUE_ID = settings.THESPORTSDB_DEFAULT_LEAGUE_ID
 DEFAULT_SEASON = settings.THESPORTSDB_DEFAULT_SEASON
@@ -33,7 +27,6 @@ def get_proximas_partidas_league(
     league_id: Optional[str] = None,
     limit: int = 10,
 ) -> List[PartidaProxima]:
-
     lid = league_id or DEFAULT_LEAGUE_ID
     partidas = repository.get_proximas_partidas_league(lid)
     return partidas[:limit]
@@ -48,7 +41,6 @@ def get_ultimos_resultados(
     league_id: Optional[str] = None,
     limit: int = 10,
 ) -> List[PartidaResultado]:
-
     lid = league_id or DEFAULT_LEAGUE_ID
     return repository.get_ultimos_resultados(lid, limit)
 
@@ -62,7 +54,6 @@ def get_tabela(
     league_id: Optional[str] = None,
     season: Optional[str] = None,
 ) -> List[TabelaTime]:
-
     lid = league_id or DEFAULT_LEAGUE_ID
     temporada = season or DEFAULT_SEASON
     return repository.get_tabela(lid, temporada)
