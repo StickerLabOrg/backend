@@ -17,21 +17,21 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # ============================
-#   Dependencies (runtime + dev)
+#   Dependencies (APENAS PRODUÇÃO)
 # ============================
-COPY requirements.txt requirements-dev.txt ./
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+# ============================
+#   Copy wait script
+# ============================
+COPY wait-for-postgres.sh /app/wait-for-postgres.sh
+RUN chmod +x /app/wait-for-postgres.sh
 
 # ============================
 #   Copy application code
 # ============================
 COPY . .
-
-# Script de espera pelo PostgreSQL
-COPY wait-for-postgres.sh .
-RUN chmod +x wait-for-postgres.sh
-
 
 ENV PYTHONPATH=/app
 
@@ -41,7 +41,6 @@ ENV PYTHONPATH=/app
 EXPOSE 8000
 
 # ============================
-#   CMD (não roda testes aqui)
-#   Testes são rodados no docker-compose
+#   CMD (sem --reload em produção)
 # ============================
-CMD ["sh", "-c", "uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
